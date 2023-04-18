@@ -1,7 +1,7 @@
-# Your name: 
-# Your student id:
-# Your email:
-# List who you have worked with on this homework:
+# Your name: Dylan Zgodny 
+# Your student id: 05101958
+# Your email: dzgodny@umich.edu
+# List who you have worked with on this homework: jade stoler and lily wachtel 
 
 import matplotlib.pyplot as plt
 import os
@@ -15,7 +15,20 @@ def load_rest_data(db):
     and each inner key is a dictionary, where the key:value pairs should be the category, 
     building, and rating for the restaurant.
     """
-    pass
+    #path = os.path.dirname(os.path.abspath(__file__))
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute("SELECT r.name, c.category, b.building, r.rating FROM restaurants r JOIN categories c ON r.category_id = c.id JOIN buildings b ON r.building_id = b.id")
+    r_info = cur.fetchall()
+    r_dict = {}
+    for row in r_info:
+        name = row[0]
+        category = row[1]
+        building = row[2]
+        rating = row[3]
+        r_dict[name] = {'category': category, 'building' : building, 'rating': rating}
+        conn.close()
+    return r_dict
 
 def plot_rest_categories(db):
     """
@@ -23,7 +36,25 @@ def plot_rest_categories(db):
     restaurant categories and the values should be the number of restaurants in each category. The function should
     also create a bar chart with restaurant categories and the count of number of restaurants in each category.
     """
-    pass
+    #path = os.path.dirname(os.path.abspath(__file__))
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute("SELECT c.category, COUNT(r.name) FROM restaurants r JOIN categories c ON r.category_id = c.id")
+    c_info = cur.fetchall()
+    data = {}
+    for row in c_info:
+        category = row[0]
+        numb = row[1]
+        data[category] = numb
+    print(data)
+    conn.close()
+    
+    plt.bar(data.keys(), data.values())
+    plt.title('Number of Restaurants by Categroy')
+    plt.xlabel('Cateogry')
+    plt.ylabel('Count')
+    plt.show()
+    return data
 
 def find_rest_in_building(building_num, db):
     '''
@@ -31,7 +62,14 @@ def find_rest_in_building(building_num, db):
     restaurant names. You need to find all the restaurant names which are in the specific building. The restaurants 
     should be sorted by their rating from highest to lowest.
     '''
-    pass
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute("SELECT r.name FROM restaurants r JOIN buildings b ON r.building_id = b.id WHERE b.building = ? ORDER BY r.rating DESC", (building_num,))
+    r_info = cur.fetchall()
+    restaurant = [row[0] for row in r_info]
+    conn.close()
+    print(restaurant)
+    return restaurant
 
 #EXTRA CREDIT
 def get_highest_rating(db): #Do this through DB as well
@@ -45,11 +83,46 @@ def get_highest_rating(db): #Do this through DB as well
     The second bar chart displays the buildings along the y-axis and their ratings along the x-axis 
     in descending order (by rating).
     """
-    pass
+    import sqlite3
+    import matplotlib.pyplot as plt
+
+def get_highest_rating(db):
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute("SELECT categories.category, AVG(restaurants.rating) FROM restaurants JOIN categories ON restaurants.category_id = categories.id GROUP BY categories.category ORDER BY AVG(restaurants.rating) DESC LIMIT 1")
+    highest_cat, avg_cat_rating = cur.fetchone()
+
+
+    cur.execute("SELECT buildings.building, AVG(restaurants.rating) FROM restaurants JOIN buildings ON restaurants.building_id = buildings.id GROUP BY buildings.building ORDER BY AVG(restaurants.rating) DESC lIMIT 1")
+    highest_building, avg_building_rating = cur.fetchone()
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (10,5))
+    cur.execute("SELECT categories.category, AVG(restaurants.rating) FROM restaurants JOIN categories ON restaurants.category_id = categories.id GROUP BY categories.category ORDER BY AVG(restaurants.rating) DESC")
+
+    data = cur.fetchall()
+    categories, ratings = zip(*data)
+    ax1.bar(categories, ratings)
+    ax1.set_title("Restaurant Categories by Avg Rating")
+    ax1.set_xlabel("Category")
+    ax1.set_ylabel("Avg Rating")
+    ax1.tick_params(axis="x", rotation = 90)
+
+    cur.execute("SELECT buildings.building, AVG(restaurants.rating) FROM restaurants JOIN buildings ON restaurants.building_id = buildings.id GROUP BY buildings.building ORDER BY AVG(restaurants.rating) DESC")
+    data = cur.fetchall()
+    buildings, ratings = zip(*data)
+    ax2.bar(buildings, ratings)
+    ax2.set_title("Buildings by Avg Rating")
+    ax2.set_xlabel("Building")
+    ax2.set_ylable("Average Rating")
+    ax2.tick_params(axis="x", rotation = 90)
+
+    plt.show()
+
+    return[(highest_cat, avg_cat_rating), (highest_building, avg_building_rating)]
 
 #Try calling your functions here
 def main():
-    pass
+    get_highest_rating("South_U_Restaurants.db")
 
 class TestHW8(unittest.TestCase):
     def setUp(self):
